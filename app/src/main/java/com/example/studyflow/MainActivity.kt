@@ -19,17 +19,14 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             StudyFlowTheme {
-                // Основной навигатор приложения
                 val navController = rememberNavController()
 
                 Scaffold { innerPadding ->
-                    // NavHost — это контейнер для твоих окон из наброска
                     NavHost(
                         navController = navController,
-                        startDestination = "home", // Начинаем с главного экрана
+                        startDestination = "home",
                         modifier = Modifier.padding(innerPadding)
                     ) {
-                        // 1. Главный экран (с поиском и плитками)
                         composable("home") {
                             HomeScreen(
                                 onOpenCalendar = { navController.navigate("calendar") },
@@ -37,12 +34,10 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        // 2. Экран календаря (сетка месяца)
                         composable("calendar") {
                             CalendarScreen(onBack = { navController.popBackStack() })
                         }
 
-                        // 3. Экран деталей (редактирование текста)
                         composable("detail") {
                             DetailScreen(onBack = { navController.popBackStack() })
                         }
@@ -53,18 +48,14 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// Временные заглушки для твоих окон, чтобы проект запускался:
 @Composable
 fun HomeScreen(onOpenCalendar: () -> Unit, onOpenDetail: () -> Unit) {
-    // Сюда мы сейчас напишем код для плиток и поиска
 }
 
 @Composable
 fun CalendarScreen(onBack: () -> Unit) {
-    /* Твой набросок с сеткой мая */
 }
 
 @Composable
 fun DetailScreen(onBack: () -> Unit) {
-    /* Твой набросок с текстом и кнопками удаления/сохранения */
 }
