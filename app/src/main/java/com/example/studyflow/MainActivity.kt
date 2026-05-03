@@ -11,7 +11,17 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.studyflow.ui.*
 import com.example.studyflow.ui.theme.StudyFlowTheme
+
+sealed class Screen(val route: String) {
+    object Notes : Screen("notes")
+    object EventCalendar : Screen("calendar")
+    object EventList : Screen("events")
+    object NewNote : Screen("new_note")
+    object Settings : Screen("settings")
+    object Change : Screen("change")
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -24,38 +34,32 @@ class MainActivity : ComponentActivity() {
                 Scaffold { innerPadding ->
                     NavHost(
                         navController = navController,
-                        startDestination = "home",
+                        startDestination = Screen.Notes.route,
                         modifier = Modifier.padding(innerPadding)
                     ) {
-                        composable("home") {
-                            HomeScreen(
-                                onOpenCalendar = { navController.navigate("calendar") },
-                                onOpenDetail = { navController.navigate("detail") }
+                        composable(Screen.Notes.route) {
+                            Notes(
+                                onAddClick = { navController.navigate(Screen.NewNote.route) },
+                                onSettingsClick = { navController.navigate(Screen.Settings.route) },
+                                onMenuClick = {}
                             )
                         }
 
-                        composable("calendar") {
-                            CalendarScreen(onBack = { navController.popBackStack() })
+                        composable(Screen.NewNote.route) {
+                            NewNote(onBack = { navController.popBackStack() })
                         }
 
-                        composable("detail") {
-                            DetailScreen(onBack = { navController.popBackStack() })
+                        composable(Screen.EventCalendar.route) {
+                            EventCalendar(onBack = { navController.popBackStack() })
                         }
+
+                        composable(Screen.Settings.route) {
+                            SettingsScreen(onBack = { navController.popBackStack() })
+                        }
+
                     }
                 }
             }
         }
     }
-}
-
-@Composable
-fun HomeScreen(onOpenCalendar: () -> Unit, onOpenDetail: () -> Unit) {
-}
-
-@Composable
-fun CalendarScreen(onBack: () -> Unit) {
-}
-
-@Composable
-fun DetailScreen(onBack: () -> Unit) {
 }
