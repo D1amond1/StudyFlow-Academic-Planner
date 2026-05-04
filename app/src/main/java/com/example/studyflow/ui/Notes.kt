@@ -18,6 +18,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.studyflow.ui.theme.TextMainUI
+import com.example.studyflow.ui.theme.TextUserData
 
 data class StudyNote(val id: Int, val title: String, val description: String)
 
@@ -40,7 +42,12 @@ fun Notes(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("StudyFlow", fontWeight = FontWeight.Bold) },
+                title = {
+                    Text(
+                        "StudyFlow",
+                        fontWeight = FontWeight.Bold,
+                        color = TextMainUI
+                        ) },
                 navigationIcon = {
                     IconButton(onClick = onMenuClick) {
                         Icon(Icons.Default.Menu, contentDescription = "Menu")
@@ -113,10 +120,11 @@ fun NoteCard(note: StudyNote) {
                 text = note.description,
                 modifier = Modifier.padding(8.dp),
                 fontSize = 10.sp,
-                lineHeight = 12.sp
+                lineHeight = 12.sp,
+                color = TextUserData
             )
         }
         Spacer(modifier = Modifier.height(8.dp))
-        Text(text = note.title, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+        Text(text = note.title, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = TextUserData)
     }
 }

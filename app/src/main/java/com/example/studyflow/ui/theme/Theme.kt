@@ -22,7 +22,7 @@ private val LightColorScheme = lightColorScheme(
     primary = TealPrimary,
     background = LightAppBackground,
     surface = WhiteSurface,
-    onSurface = DarkText
+    onSurface = TextUserData
 )
 
 @Composable
