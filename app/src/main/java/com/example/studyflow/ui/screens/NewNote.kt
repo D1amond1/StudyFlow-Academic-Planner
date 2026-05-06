@@ -1,10 +1,10 @@
 package com.example.studyflow.ui.screens
 
-import androidx.compose.foundation.background
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -15,95 +15,80 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.studyflow.ui.theme.*
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
+import com.example.studyflow.ui.viewmodel.NotesViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NewNote(
-    onBack: () -> Unit,
-    onSave: (title: String, description: String) -> Unit = { _, _ -> }
+fun NewNoteScreen(
+    navController: NavController,
+    viewModel: NotesViewModel = hiltViewModel()
 ) {
+    val notes by viewModel.notes.collectAsState()
     var title by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
+    var content by remember { mutableStateOf("") }
+
+    val defaultTitle = "Note ${notes.size + 1}"
+
+    val onSave = {
+        if (title.isBlank() && content.isBlank()) {
+        } else {
+            viewModel.saveNewNote(title.ifBlank { defaultTitle }, content)
+        }
+        navController.popBackStack()
+    }
+
+    BackHandler { onSave() }
 
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    BasicTextField(
+                        value = title,
+                        onValueChange = { title = it },
+                        textStyle = TextStyle(
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        ),
+                        decorationBox = { innerTextField ->
+                            if (title.isEmpty()) Text("Note...", color = Color.Gray, fontSize = 20.sp)
+                            innerTextField()
+                        }
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = { onSave() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = {
-                    onSave(title, description)
-                    onBack()
-                },
-                containerColor = TealPrimary,
-                contentColor = Color.White
+                onClick = { onSave() },
+                containerColor = MaterialTheme.colorScheme.primary
             ) {
-                Icon(Icons.Default.Check, contentDescription = "Сохранить")
+                Icon(Icons.Default.Check, contentDescription = "Save", tint = Color.White)
             }
-        },
-        containerColor = LightAppBackground
-    ) { innerPadding ->
+        }
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(padding)
+                .padding(16.dp)
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color(0xFFD9D9D9))
-                    .padding(horizontal = 8.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = {
-                    onSave(title, description)
-                    onBack()
-                }) {
-                    Icon(Icons.Default.ArrowBackIosNew, contentDescription = "Назад", tint = TextUserData)
-                }
-
-                BasicTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    textStyle = TextStyle(
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextUserData
-                    ),
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = 8.dp),
-                    decorationBox = { innerTextField ->
-                        if (title.isEmpty()) {
-                            Text(
-                                text = "Note...",
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = TextUserData.copy(alpha = 0.5f)
-                            )
-                        }
-                        innerTextField()
-                    }
-                )
-            }
-
             BasicTextField(
-                value = description,
-                onValueChange = { description = it },
-                textStyle = TextStyle(
-                    fontSize = 16.sp,
-                    color = TextUserData,
-                    lineHeight = 24.sp
-                ),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(WhiteSurface)
-                    .padding(16.dp),
+                value = content,
+                onValueChange = { content = it },
+                modifier = Modifier.fillMaxSize(),
+                textStyle = TextStyle(fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface),
                 decorationBox = { innerTextField ->
-                    if (description.isEmpty()) {
-                        Text(
-                            text = "New note...",
-                            fontSize = 16.sp,
-                            color = Color.Gray
-                        )
-                    }
+                    if (content.isEmpty()) Text("New note...", color = Color.Gray)
                     innerTextField()
                 }
             )

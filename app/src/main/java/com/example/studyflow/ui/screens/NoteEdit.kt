@@ -1,91 +1,84 @@
 package com.example.studyflow.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.studyflow.ui.theme.*
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
+import com.example.studyflow.ui.viewmodel.NotesViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NoteEdit(
-    initialTitle: String,
-    initialDescription: String,
-    onBack: () -> Unit,
-    onSave: (title: String, description: String) -> Unit
+fun NoteEditScreen(
+    navController: NavController,
+    noteId: Long,
+    viewModel: NotesViewModel = hiltViewModel()
 ) {
-    var title by remember { mutableStateOf(initialTitle) }
-    var description by remember { mutableStateOf(initialDescription) }
+    val notes by viewModel.notes.collectAsState()
+    val note = notes.find { it.id == noteId }
+
+    var title by remember { mutableStateOf(note?.title ?: "") }
+    var content by remember { mutableStateOf(note?.content ?: "") }
+
+    if (note == null) {
+        LaunchedEffect(Unit) { navController.popBackStack() }
+        return
+    }
 
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    BasicTextField(
+                        value = title,
+                        onValueChange = { title = it },
+                        textStyle = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Cancel")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = {
+                        viewModel.deleteNote(note)
+                        navController.popBackStack()
+                    }) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete")
+                    }
+                }
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    onSave(title, description)
-                    onBack()
+                    viewModel.updateNote(note, title, content)
+                    navController.popBackStack()
                 },
-                containerColor = TealPrimary,
-                contentColor = Color.White
+                containerColor = MaterialTheme.colorScheme.primary
             ) {
-                Icon(Icons.Default.Check, contentDescription = "Сохранить изменения")
+                Icon(Icons.Default.Check, contentDescription = "Save Changes", tint = Color.White)
             }
-        },
-        containerColor = LightAppBackground
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color(0xFFD9D9D9))
-                    .padding(horizontal = 8.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = {
-                    onBack()
-                }) {
-                    Icon(Icons.Default.ArrowBackIosNew, contentDescription = "Отменить изменения", tint = TextUserData)
-                }
-
-                BasicTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    textStyle = TextStyle(
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextUserData
-                    ),
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = 8.dp)
-                )
-            }
-
+        }
+    ) { padding ->
+        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
             BasicTextField(
-                value = description,
-                onValueChange = { description = it },
-                textStyle = TextStyle(
-                    fontSize = 16.sp,
-                    color = TextUserData,
-                    lineHeight = 24.sp
-                ),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(WhiteSurface)
-                    .padding(16.dp)
+                value = content,
+                onValueChange = { content = it },
+                modifier = Modifier.fillMaxSize(),
+                textStyle = TextStyle(fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
             )
         }
     }

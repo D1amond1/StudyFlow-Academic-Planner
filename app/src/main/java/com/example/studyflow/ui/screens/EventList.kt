@@ -1,179 +1,166 @@
 package com.example.studyflow.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
+import com.example.studyflow.data.local.entity.EventEntity
+import com.example.studyflow.ui.navigation.Screen
 import com.example.studyflow.ui.theme.*
-import androidx.compose.material.icons.outlined.Timer
-
-data class DetailedEvent(
-    val id: Int,
-    val title: String,
-    val description: String,
-    val status: EventStatus,
-    val timeText: String,
-    val remainingMinutes: Int
-)
+import com.example.studyflow.ui.viewmodel.EventsViewModel
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EventList(
-    events: List<DetailedEvent>,
-    onMenuClick: () -> Unit,
-    onSettingsClick: () -> Unit,
-    onCalendarClick: () -> Unit,
-    onAddClick: () -> Unit
+fun EventListScreen(
+    navController: NavController,
+    viewModel: EventsViewModel = hiltViewModel()
 ) {
-    val sortedEvents = remember(events) {
-        events.sortedBy { it.remainingMinutes }
-    }
+    val events by viewModel.events.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val coroutineScope = rememberCoroutineScope()
 
-    var searchQuery by remember { mutableStateOf("") }
-
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("StudyFlow", fontWeight = FontWeight.Bold, color = TextMainUI) },
-                navigationIcon = {
-                    IconButton(onClick = onMenuClick) {
-                        Icon(Icons.Default.Menu, contentDescription = "Меню", tint = TextMainUI)
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet(modifier = Modifier.width(280.dp)) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("StudyFlow", fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 16.dp))
+                    DrawerItem(title = "Notes", isSelected = false) {
+                        navController.navigate(Screen.Notes.route)
                     }
-                },
-                actions = {
-                    IconButton(onClick = onCalendarClick) {
-                        Icon(Icons.Default.DateRange, contentDescription = "Календарь", tint = TextMainUI)
+                    DrawerItem(title = "Events", isSelected = true) {
+                        coroutineScope.launch { drawerState.close() }
                     }
-                    IconButton(onClick = onSettingsClick) {
-                        Icon(Icons.Default.Settings, contentDescription = "Настройки", tint = TextMainUI)
-                    }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = Color.Transparent
-                )
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onAddClick,
-                containerColor = TealPrimary,
-                contentColor = Color.White
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Добавить")
-            }
-        },
-        containerColor = LightAppBackground
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp)
-        ) {
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                shape = RoundedCornerShape(12.dp),
-                placeholder = { Text("Поиск...", color = Color.Gray) },
-                trailingIcon = { Icon(Icons.Default.Search, contentDescription = "Поиск", tint = TextMainUI) },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = WhiteSurface,
-                    unfocusedContainerColor = WhiteSurface,
-                    focusedBorderColor = TealPrimary,
-                    unfocusedBorderColor = Color.Transparent
-                ),
-                singleLine = true
-            )
-
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                items(sortedEvents) { event ->
-                    EventCard(event = event)
                 }
-                item { Spacer(modifier = Modifier.height(80.dp)) }
+            }
+        }
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("StudyFlow", fontWeight = FontWeight.Bold) },
+                    navigationIcon = {
+                        IconButton(onClick = { coroutineScope.launch { drawerState.open() } }) {
+                            Icon(Icons.Default.Menu, contentDescription = null)
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { navController.navigate(Screen.EventCalendar.route) }) {
+                            Icon(Icons.Default.DateRange, contentDescription = "Calendar View")
+                        }
+                        IconButton(onClick = { navController.navigate(Screen.Settings.route) }) {
+                            Icon(Icons.Default.Settings, contentDescription = "Settings")
+                        }
+                    }
+                )
+            },
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = { navController.navigate(Screen.NewEvent.route) },
+                    containerColor = TealPrimary
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Add Event", tint = Color.White)
+                }
+            }
+        ) { padding ->
+            Column(modifier = Modifier.padding(padding).padding(horizontal = 16.dp)) {
+                TextField(
+                    value = searchQuery,
+                    onValueChange = { viewModel.updateSearchQuery(it) },
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)),
+                    placeholder = { Text("Search events...") },
+                    trailingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    colors = TextFieldDefaults.colors(
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(bottom = 80.dp)
+                ) {
+                    items(events) { event ->
+                        EventItem(
+                            event = event,
+                            onClick = { navController.navigate(Screen.EventEdit.createRoute(event.id)) }
+                        )
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-fun EventCard(event: DetailedEvent) {
-    val (headerColor, icon) = when (event.status) {
-        EventStatus.DONE -> LightStatusDone to Icons.Default.Check
-        EventStatus.FAILED -> LightStatusFailed to Icons.Default.Close
-        EventStatus.PENDING -> LightStatusPending to Icons.Outlined.Timer
+fun EventItem(event: EventEntity, onClick: () -> Unit) {
+    val statusColor = when (event.status) {
+        1 -> LightStatusDone
+        2 -> LightStatusFailed
+        else -> LightStatusPending
+    }
+
+    val statusIcon = when (event.status) {
+        1 -> Icons.Default.CheckCircle
+        2 -> Icons.Default.Close
+        else -> Icons.Default.Info
     }
 
     Card(
+        modifier = Modifier.fillMaxWidth().clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = WhiteSurface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = Modifier.fillMaxWidth()
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(headerColor)
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .background(statusColor)
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = event.title,
-                    fontWeight = FontWeight.Bold,
-                    color = TextUserData,
-                    fontSize = 14.sp
-                )
+                Text(event.title, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = event.timeText,
-                        fontWeight = FontWeight.Bold,
-                        color = TextUserData,
-                        fontSize = 12.sp,
-                        modifier = Modifier.padding(end = 4.dp)
-                    )
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = "Статус",
-                        tint = TextUserData,
-                        modifier = Modifier.size(16.dp)
-                    )
+                    Text(formatDeadline(event.deadlineTime), fontSize = 12.sp)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(statusIcon, contentDescription = null, modifier = Modifier.size(16.dp))
                 }
             }
-
             Text(
                 text = event.description,
-                color = TextUserData,
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
                 modifier = Modifier.padding(12.dp),
-                maxLines = 4,
+                fontSize = 13.sp,
+                maxLines = 3,
                 overflow = TextOverflow.Ellipsis
             )
         }
     }
+}
+
+fun formatDeadline(time: Long): String {
+    val sdf = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault())
+    return sdf.format(Date(time))
 }
