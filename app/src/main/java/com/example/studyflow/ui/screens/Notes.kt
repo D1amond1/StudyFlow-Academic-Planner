@@ -4,18 +4,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -25,6 +14,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+// ВАЖНО: Только Material 3 импорты
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DrawerValue
@@ -78,8 +68,7 @@ fun NotesScreen(
         gesturesEnabled = true,
         drawerContent = {
             ModalDrawerSheet(
-                modifier = Modifier.width(280.dp),
-                containerColor = MaterialTheme.colorScheme.surface
+                modifier = Modifier.width(280.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
@@ -108,11 +97,7 @@ fun NotesScreen(
             topBar = {
                 TopAppBar(
                     title = {
-                        Text(
-                            text = "StudyFlow",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 22.sp
-                        )
+                        Text("StudyFlow", fontWeight = FontWeight.Bold, fontSize = 22.sp)
                     },
                     navigationIcon = {
                         IconButton(onClick = { coroutineScope.launch { drawerState.open() } }) {
@@ -124,12 +109,7 @@ fun NotesScreen(
                             Icon(Icons.Default.Settings, contentDescription = "Settings", modifier = Modifier.size(28.dp))
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent,
-                        titleContentColor = MaterialTheme.colorScheme.onSurface,
-                        actionIconContentColor = MaterialTheme.colorScheme.onSurface,
-                        navigationIconContentColor = MaterialTheme.colorScheme.onSurface
-                    )
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
                 )
             },
             floatingActionButton = {
@@ -152,16 +132,10 @@ fun NotesScreen(
                 TextField(
                     value = searchQuery,
                     onValueChange = { viewModel.updateSearchQuery(it) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp)),
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)),
                     placeholder = { Text("Search by title...") },
-                    trailingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = "Search Icon")
-                    },
+                    trailingIcon = { Icon(Icons.Default.Search, contentDescription = "Search Icon") },
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent
                     ),
@@ -190,34 +164,21 @@ fun NotesScreen(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun NoteItem(
-    note: NoteEntity,
-    onClick: () -> Unit
-) {
+fun NoteItem(note: NoteEntity, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(140.dp)
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onClick
-            ),
+            .combinedClickable(onClick = onClick, onLongClick = onClick),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp)
-        ) {
+        Column(modifier = Modifier.fillMaxSize().padding(12.dp)) {
             Text(
                 text = note.title,
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -235,7 +196,6 @@ fun NoteItem(
 @Composable
 fun DrawerItem(title: String, isSelected: Boolean, onClick: () -> Unit) {
     val backgroundColor = if (isSelected) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f) else Color.Transparent
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -247,8 +207,7 @@ fun DrawerItem(title: String, isSelected: Boolean, onClick: () -> Unit) {
         Text(
             text = title,
             fontSize = 18.sp,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-            color = MaterialTheme.colorScheme.onSurface
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
         )
     }
 }

@@ -1,7 +1,6 @@
 package com.example.studyflow.di
 
 import android.app.Application
-import androidx.room.Room
 import com.example.studyflow.data.local.AppDatabase
 import com.example.studyflow.data.local.dao.EventDao
 import com.example.studyflow.data.local.dao.NoteDao
@@ -19,13 +18,7 @@ object AppModule {
     @Provides
     @Singleton
     fun provideAppDatabase(app: Application): AppDatabase {
-        return Room.databaseBuilder(
-            app,
-            AppDatabase::class.java,
-            "studyflow_database"
-        )
-            .fallbackToDestructiveMigration()
-            .build()
+        return AppDatabase.getDatabase(app)
     }
 
     @Provides
@@ -42,7 +35,10 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideStudyFlowRepository(noteDao: NoteDao, eventDao: EventDao): StudyFlowRepository {
+    fun provideStudyFlowRepository(
+        noteDao: NoteDao,
+        eventDao: EventDao
+    ): StudyFlowRepository {
         return StudyFlowRepository(noteDao, eventDao)
     }
 }

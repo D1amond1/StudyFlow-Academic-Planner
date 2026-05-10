@@ -1,215 +1,236 @@
 package com.example.studyflow.ui.screens
 
-import android.app.DatePickerDialog
-import android.app.TimePickerDialog
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import com.example.studyflow.ui.theme.*
-import java.time.LocalDate
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter
+import com.example.studyflow.ui.viewmodel.EventsViewModel
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NewEvent(
-    onBack: () -> Unit,
-    onSave: (title: String, description: String, status: EventStatus, date: LocalDate?, time: LocalTime?) -> Unit = { _, _, _, _, _ -> }
+fun NewEventScreen(
+    navController: NavController,
+    viewModel: EventsViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
+    val events by viewModel.events.collectAsState()
 
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
+    var status by remember { mutableStateOf(0) }
 
-    var status by remember { mutableStateOf(EventStatus.PENDING) }
+    val calendar = remember { Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) } }
+    var deadlineTime by remember { mutableStateOf(calendar.timeInMillis) }
 
-    var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
-    var selectedTime by remember { mutableStateOf<LocalTime?>(null) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
 
-    val headerBackgroundColor = when (status) {
-        EventStatus.DONE -> LightStatusDone
-        EventStatus.FAILED -> LightStatusFailed
-        EventStatus.PENDING -> LightStatusPending
+    val headerColor = when (status) {
+        1 -> LightStatusDone
+        2 -> LightStatusFailed
+        else -> LightStatusPending
     }
 
-    fun getIconHighlight(targetStatus: EventStatus): Color {
-        return if (status == targetStatus) {
-            when (targetStatus) {
-                EventStatus.DONE -> LightStatusDoneSelected
-                EventStatus.FAILED -> LightStatusFailedSelected
-                EventStatus.PENDING -> LightStatusPendingSelected
-            }
-        } else Color.Transparent
+    val defaultTitle = "Event ${events.size + 1}"
+
+    val onSave = {
+        if (title.isNotBlank() || description.isNotBlank()) {
+            viewModel.saveNewEvent(
+                title = title.ifBlank { defaultTitle },
+                description = description,
+                deadlineTime = deadlineTime,
+                status = status
+            )
+        }
+        navController.popBackStack()
     }
+
+    BackHandler { onSave() }
 
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    BasicTextField(
+                        value = title,
+                        onValueChange = { title = it },
+                        textStyle = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Black),
+                        decorationBox = { innerTextField ->
+                            if (title.isEmpty()) Text("Event...", color = Color.DarkGray, fontSize = 20.sp)
+                            innerTextField()
+                        }
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = { onSave() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.Black)
+                    }
+                },
+                actions = {
+                    StatusSelector(
+                        currentStatus = status,
+                        onStatusSelected = { status = it }
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = headerColor)
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = {
-                    onSave(title, description, status, selectedDate, selectedTime)
-                    onBack()
-                },
+                onClick = { onSave() },
                 containerColor = TealPrimary,
                 contentColor = Color.White
             ) {
-                Icon(Icons.Default.Check, contentDescription = "Сохранить")
+                Icon(Icons.Default.Check, contentDescription = "Save")
             }
-        },
-        containerColor = LightAppBackground
-    ) { innerPadding ->
+        }
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(padding)
+                .padding(16.dp)
         ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(headerBackgroundColor)
-                    .padding(horizontal = 8.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                IconButton(onClick = {
-                    onSave(title, description, status, selectedDate, selectedTime)
-                    onBack()
-                }) {
-                    Icon(Icons.Default.ArrowBackIosNew, contentDescription = "Назад", tint = TextUserData)
+                OutlinedButton(onClick = { showDatePicker = true }) {
+                    Text("Date: ${SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(deadlineTime))}")
                 }
-
-                BasicTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    textStyle = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextUserData),
-                    modifier = Modifier.weight(1f),
-                    decorationBox = { innerTextField ->
-                        if (title.isEmpty()) {
-                            Text("Event...", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextUserData.copy(alpha = 0.5f))
-                        }
-                        innerTextField()
-                    }
-                )
-
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    IconButton(
-                        onClick = { status = EventStatus.DONE },
-                        modifier = Modifier.background(getIconHighlight(EventStatus.DONE), CircleShape)
-                    ) {
-                        Icon(Icons.Default.Check, contentDescription = "Сделано", tint = TextUserData)
-                    }
-                    IconButton(
-                        onClick = { status = EventStatus.FAILED },
-                        modifier = Modifier.background(getIconHighlight(EventStatus.FAILED), CircleShape)
-                    ) {
-                        Icon(Icons.Default.Close, contentDescription = "Провалено", tint = TextUserData)
-                    }
-                    IconButton(
-                        onClick = { status = EventStatus.PENDING },
-                        modifier = Modifier.background(getIconHighlight(EventStatus.PENDING), CircleShape)
-                    ) {
-                        Icon(Icons.Outlined.Timer, contentDescription = "В ожидании", tint = TextUserData)
-                    }
-                    IconButton(onClick = { /* Логика удаления будет позже */ }) {
-                        Icon(Icons.Default.Delete, contentDescription = "Удалить", tint = TextUserData)
-                    }
+                OutlinedButton(onClick = { showTimePicker = true }) {
+                    Text("Time: ${SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(deadlineTime))}")
                 }
             }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(WhiteSurface)
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(if (selectedDate != null) TealPrimary.copy(alpha = 0.2f) else Color.LightGray.copy(alpha = 0.3f))
-                        .clickable {
-                            val now = LocalDate.now()
-                            DatePickerDialog(
-                                context,
-                                { _, year, month, dayOfMonth ->
-                                    selectedDate = LocalDate.of(year, month + 1, dayOfMonth)
-                                },
-                                selectedDate?.year ?: now.year,
-                                (selectedDate?.monthValue ?: now.monthValue) - 1,
-                                selectedDate?.dayOfMonth ?: now.dayOfMonth
-                            ).show()
-                        }
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.DateRange, contentDescription = null, modifier = Modifier.size(16.dp), tint = TextUserData)
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = selectedDate?.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")) ?: "Дата",
-                        fontSize = 14.sp,
-                        color = TextUserData
-                    )
-                }
-
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(if (selectedTime != null) TealPrimary.copy(alpha = 0.2f) else Color.LightGray.copy(alpha = 0.3f))
-                        .clickable {
-                            val now = LocalTime.now()
-                            TimePickerDialog(
-                                context,
-                                { _, hourOfDay, minute ->
-                                    selectedTime = LocalTime.of(hourOfDay, minute)
-                                },
-                                selectedTime?.hour ?: now.hour,
-                                selectedTime?.minute ?: now.minute,
-                                true
-                            ).show()
-                        }
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Outlined.Timer, contentDescription = null, modifier = Modifier.size(16.dp), tint = TextUserData)
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = selectedTime?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: "Время",
-                        fontSize = 14.sp,
-                        color = TextUserData
-                    )
-                }
-            }
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(16.dp))
 
             BasicTextField(
                 value = description,
                 onValueChange = { description = it },
-                textStyle = TextStyle(fontSize = 16.sp, color = TextUserData, lineHeight = 24.sp),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(WhiteSurface)
-                    .padding(16.dp),
+                modifier = Modifier.fillMaxSize(),
+                textStyle = TextStyle(fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface),
                 decorationBox = { innerTextField ->
-                    if (description.isEmpty()) {
-                        Text("New event...", fontSize = 16.sp, color = Color.Gray)
-                    }
+                    if (description.isEmpty()) Text("New event description...", color = Color.Gray)
                     innerTextField()
                 }
             )
         }
+    }
+
+
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = deadlineTime)
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let {
+                        val timeCal = Calendar.getInstance().apply { timeInMillis = deadlineTime }
+                        val newCal = Calendar.getInstance().apply { timeInMillis = it }
+                        newCal.set(Calendar.HOUR_OF_DAY, timeCal.get(Calendar.HOUR_OF_DAY))
+                        newCal.set(Calendar.MINUTE, timeCal.get(Calendar.MINUTE))
+                        deadlineTime = newCal.timeInMillis
+                    }
+                    showDatePicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    if (showTimePicker) {
+        val timeCal = Calendar.getInstance().apply { timeInMillis = deadlineTime }
+        val timePickerState = rememberTimePickerState(
+            initialHour = timeCal.get(Calendar.HOUR_OF_DAY),
+            initialMinute = timeCal.get(Calendar.MINUTE)
+        )
+        AlertDialog(
+            onDismissRequest = { showTimePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val newCal = Calendar.getInstance().apply { timeInMillis = deadlineTime }
+                    newCal.set(Calendar.HOUR_OF_DAY, timePickerState.hour)
+                    newCal.set(Calendar.MINUTE, timePickerState.minute)
+                    deadlineTime = newCal.timeInMillis
+                    showTimePicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTimePicker = false }) { Text("Cancel") }
+            },
+            text = { TimePicker(state = timePickerState) }
+        )
+    }
+}
+
+@Composable
+fun StatusSelector(
+    currentStatus: Int,
+    onStatusSelected: (Int) -> Unit
+) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(end = 8.dp)) {
+        // Pending
+        StatusIcon(icon = Icons.Default.Info, isSelected = currentStatus == 0, onClick = { onStatusSelected(0) })
+        Spacer(modifier = Modifier.width(8.dp))
+        // Done
+        StatusIcon(icon = Icons.Default.CheckCircle, isSelected = currentStatus == 1, onClick = { onStatusSelected(1) })
+        Spacer(modifier = Modifier.width(8.dp))
+        // Failed
+        StatusIcon(icon = Icons.Default.Close, isSelected = currentStatus == 2, onClick = { onStatusSelected(2) })
+    }
+}
+
+@Composable
+fun StatusIcon(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(32.dp)
+            .clip(CircleShape)
+            .background(Color.White.copy(alpha = 0.3f))
+            .border(
+                width = if (isSelected) 2.dp else 0.dp,
+                color = if (isSelected) Color.Black else Color.Transparent,
+                shape = CircleShape
+            )
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(icon, contentDescription = null, tint = Color.Black, modifier = Modifier.size(20.dp))
     }
 }

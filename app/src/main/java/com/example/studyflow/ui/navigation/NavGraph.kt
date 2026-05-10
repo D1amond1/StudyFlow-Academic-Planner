@@ -8,7 +8,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.studyflow.ui.screens.EventCalendarScreen
-import com.example.studyflow.ui.screens.EventEditScreen
+import com.example.studyflow.ui.screens.EventEdit
 import com.example.studyflow.ui.screens.EventListScreen
 import com.example.studyflow.ui.screens.NewEventScreen
 import com.example.studyflow.ui.screens.NewNoteScreen
@@ -59,7 +59,7 @@ fun StudyFlowNavGraph(
             arguments = listOf(navArgument("eventId") { type = NavType.LongType })
         ) { backStackEntry ->
             val eventId = backStackEntry.arguments?.getLong("eventId") ?: -1L
-            EventEditScreen(navController = navController, eventId = eventId)
+            EventEdit(navController = navController, eventId = eventId)
         }
 
         composable(Screen.Settings.route) {
