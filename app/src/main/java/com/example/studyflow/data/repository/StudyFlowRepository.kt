@@ -45,7 +45,7 @@ class StudyFlowRepository @Inject constructor(
         return eventDao.searchEventsByTitle(query)
     }
 
-    suspend fun getEventById(id: Long): EventEntity? {
+    fun getEventById(id: Long): Flow<EventEntity?> {
         return eventDao.getEventById(id)
     }
 
